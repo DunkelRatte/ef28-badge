@@ -24,6 +24,7 @@
  * @author Irah / DarkRat
  */
 
+#include <vector>
 #include <EFLogging.h>
 #include <EFBoard.h>
 #include <EFLed.h>
@@ -63,7 +64,8 @@ void EFDisplayClass::loop() {
 
     animationTick();
 
-    EFLed.setDragonEye(CRGB(60, 60, 80));
+    EFLed.setDragonEye(CRGB(60, 60, 100));
+    EFLed.setDragonMuzzle(CRGB(40, 40, 80));
 
 
     String batt = "BAT:" + String(EFBoard.getBatteryCapacityPercent()) + "%";
@@ -81,7 +83,57 @@ void EFDisplayClass::loop() {
     animThickLine();
     animThinLine();
 
+    eyeOutline();
 
+    drawTraces();
+
+    u8g2.sendBuffer();
+}
+
+void EFDisplayClass::drawTraces() const {
+    const int offset[] = {6, 87};
+    const std::vector<std::array<int, 2>> points = {
+            {0, 0},
+            {7, 7},
+            {47, 7},
+            {54, 0},
+    };
+    drawShape(offset, points);
+
+    const std::vector<std::array<int, 2>> points2 = {
+            {18, 7},
+            {5, 20},
+            {5, 34},
+            {10, 39},
+            {16, 39},
+            {24, 31},
+    };
+    drawShape(offset, points2);
+
+    const std::vector<std::array<int, 2>> points3 = {
+            {32, 7},
+            {47, 22},
+            {47, 34},
+            {52, 39},
+    };
+    drawShape(offset, points3);
+
+    const std::vector<std::array<int, 2>> points4 = {
+            {5, 34},
+            {5, 44},
+    };
+    drawShape(offset, points4);
+}
+
+void EFDisplayClass::drawShape(const int *offset, const std::vector<std::array<int, 2>> &points) const {
+    for(int i = 0; i < points.size() - 1; i++){
+        auto p = points[i];
+        auto in = points[i + 1];
+        u8g2.drawLine(p[0] + offset[0], p[1] + offset[1], in[0] + offset[0], in[1] + offset[1]);
+    }
+}
+
+void EFDisplayClass::eyeOutline() const {
     int point_size = 5;
     int8_t points[5][2] = {
             {0, 0},
@@ -97,11 +149,7 @@ void EFDisplayClass::loop() {
         int in = (p + 1) % point_size;
         u8g2.drawLine(points[p][0] + x_offset, points[p][1] + y_offset, points[in][0] + x_offset, points[in][1] + y_offset);
     }
-
-    u8g2.sendBuffer();
 }
-
-
 
 
 void EFDisplayClass::animThickLine() const {
@@ -118,8 +166,8 @@ void EFDisplayClass::animThickLine() const {
         return;
     }
 
-    u8g2.drawLine(0, thick_line , 55, thick_line);
-    u8g2.drawLine(0, thick_line+1, 55, thick_line+1);
+    u8g2.drawLine(0, thick_line , 63, thick_line);
+    u8g2.drawLine(0, thick_line+1, 63, thick_line+1);
 }
 
 void EFDisplayClass::animThinLine() const {
@@ -129,7 +177,7 @@ void EFDisplayClass::animThinLine() const {
     if(counter % 3 == 0) {
         thin_line--;
     }
-    u8g2.drawLine(0, thin_line , 55, thin_line);
+    u8g2.drawLine(0, thin_line , 63, thin_line);
 }
 
 void EFDisplayClass::animationTick() const {

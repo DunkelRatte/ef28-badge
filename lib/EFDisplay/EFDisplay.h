@@ -39,6 +39,12 @@ class EFDisplayClass {
     void animThickLine() const;
 
     void animThinLine() const;
+
+    void eyeOutline() const;
+
+    void drawShape(const int *offset, const std::vector<std::array<int, 2>> &points) const;
+
+    void drawTraces() const;
 };
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EFDISPLAY)
