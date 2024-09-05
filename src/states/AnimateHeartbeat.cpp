@@ -57,7 +57,7 @@ void AnimateHeartbeat::run() {
         intensity = intensity < 0.0 ? 0.0 : intensity;
 
         uint8_t value = static_cast<uint8_t>(intensity * 255);
-        data[i] = CHSV(this->globals->animHeartbeatHue, 255, value);
+        data[i] = CRGB(value, value, value);
     }
 
     EFLed.setAll(data);

@@ -34,10 +34,12 @@
 #include <EFLed.h>
 #include <EFPrideFlags.h>
 #include <EFTouch.h>
+#include <EFDisplay.h>
 
 #include "FSM.h"
 #include "secrets.h"
 #include "util.h"
+//#include "../lib/EFDisplay/EFDisplay.h"
 
 // Global objects and states
 constexpr unsigned int INTERVAL_BATTERY_CHECK = 60000;
@@ -152,7 +154,10 @@ void setup() {
     // Init board
     EFBoard.setup();
     EFLed.init(30);
-    
+
+    //Setup display (optional)
+    EFDisplay.init();
+
     // Touchy stuff
     EFTouch.init();
     EFTouch.attachInterruptOnTouch(EFTouchZone::Fingerprint, isr_fingerprintTouch);
@@ -172,6 +177,7 @@ void setup() {
  * @brief Main program loop
  */
 void loop() {
+    EFDisplay.loop();
     // Handler: ISR Events
     if (isrEvents.fingerprintTouch) {
         fsm.queueEvent(FSMEvent::FingerprintTouch);
