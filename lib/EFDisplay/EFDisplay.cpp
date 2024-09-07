@@ -69,10 +69,12 @@ void EFDisplayClass::loop() {
 
 
     String batt = "BAT:" + String(EFBoard.getBatteryCapacityPercent()) + "%";
+    String voltage = "PWR:" + String(EFBoard.getBatteryVoltage()) + "V";
     if(!EFBoard.isBatteryPowered()) {
         batt = "USB POWER";
     }
     u8g2.drawStr(10, 10, batt.c_str());
+    u8g2.drawStr(10, 20, voltage.c_str());
 
     if(random(0, 3000) == 0 && thick_line < 0) {
         thick_line = 0;
