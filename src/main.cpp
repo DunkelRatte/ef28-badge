@@ -32,17 +32,18 @@
 #include <EFBoard.h>
 #include <EFLogging.h>
 #include <EFLed.h>
-#include <EFPrideFlags.h>
 #include <EFTouch.h>
 #include <EFDisplay.h>
 
 #include "FSM.h"
-#include "secrets.h"
+#include "FSMGlobals.h"
 #include "util.h"
 //#include "../lib/EFDisplay/EFDisplay.h"
 
 // Global objects and states
 constexpr unsigned int INTERVAL_BATTERY_CHECK = 60000;
+// Initializing the board with a brightness above 48 can cause stability issues!
+constexpr uint8_t ABSOLUTE_MAX_BRIGHTNESS = 45;
 FSM fsm(10);
 EFBoardPowerState pwrstate;
 
@@ -64,6 +65,8 @@ volatile struct ISREventsType {
     unsigned char noseRelease:           1;
     unsigned char noseShortpress:        1;
     unsigned char noseLongpress:         1;
+    unsigned char allShortpress:         1;
+    unsigned char allLongpress:          1;
 } isrEvents;
 
 // Interrupt service routines to update ISR struct upon triggering
@@ -75,6 +78,8 @@ void ARDUINO_ISR_ATTR isr_noseTouch()             { isrEvents.noseTouch = 1; }
 void ARDUINO_ISR_ATTR isr_noseRelease()           { isrEvents.noseRelease = 1; }
 void ARDUINO_ISR_ATTR isr_noseShortpress()        { isrEvents.noseShortpress = 1; }
 void ARDUINO_ISR_ATTR isr_noseLongpress()         { isrEvents.noseLongpress = 1; }
+void ARDUINO_ISR_ATTR isr_allShortpress()         { isrEvents.allShortpress = 1; }
+void ARDUINO_ISR_ATTR isr_allLongpress()          { isrEvents.allLongpress = 1; }
 
 /**
  * @brief Handles hard brown out events
@@ -117,7 +122,7 @@ void _softBrownOutHandler() {
     EFBoard.disableWifi();
     EFLed.clear();
     EFLed.enablePower();
-    EFLed.setBrightnessPercent(50);
+    EFLed.setBrightnessPercent(40);
 
     // Soft brown out can only be cleared by board reset but can escalate to hard brown out
     while (1) {
@@ -168,18 +173,18 @@ void bootupAnimation() {
     delay(100);
 
     // Origin point. Power-Button is 11, 25. Make it originate from where the hand is
-    constexpr int16_t pwrX = -20;
-    constexpr int16_t pwrY = 26;
+    constexpr int16_t pwrX = -30;
+    constexpr int16_t pwrY = 16;
     uint8_t hue = 120;  // Green
 
     for (uint16_t n = 0; n < 30; n++) {
-        uint16_t n_scaled = n * 8;
+        uint16_t n_scaled = n * 7;
         for (uint8_t i = 0; i < EFLED_TOTAL_NUM; i++) {
             int16_t dx = EFLedClass::getLEDPosition(i).x - pwrX;
             int16_t dy = EFLedClass::getLEDPosition(i).y - pwrY;
             float distance = sqrt(dx * dx + dy * dy);
 
-            float intensity = wave_function(distance, n_scaled / 2 - 60, n_scaled * 2 + 20, 1.0);
+            float intensity = wave_function(distance, n_scaled / 2 - 30, n_scaled * 2 + 20, 1.0);
             intensity = intensity * intensity; // sharpen wave
 
             // energy front
@@ -190,23 +195,23 @@ void bootupAnimation() {
         delay(15);
     }
     EFLed.clear();
-    delay(200);
+    delay(400);
 
     // dragon awakens ;-)
     EFLed.setDragonEye(CRGB(10,0, 0));
-    delay(50);
+    delay(60);
     EFLed.setDragonEye(CRGB(50,0, 0));
     delay(80);
     EFLed.setDragonEye(CRGB(100,0, 0));
     delay(150);
     EFLed.setDragonEye(CRGB(200,0, 0));
-    delay(600);
+    delay(700);
     EFLed.setDragonEye(CRGB(100,0, 0));
-    delay(100);
-    EFLed.setDragonEye(CRGB(50,0, 0));
-    delay(100);
-    EFLed.setDragonEye(CRGB(10,0, 0));
     delay(80);
+    EFLed.setDragonEye(CRGB(50,0, 0));
+    delay(80);
+    EFLed.setDragonEye(CRGB(10,0, 0));
+    delay(60);
     EFLed.setDragonNose(CRGB::Black);
     delay(200);
 }
@@ -219,6 +224,8 @@ void setup() {
     EFBoard.setup();
     EFLed.init(30);
 
+    EFLed.init(ABSOLUTE_MAX_BRIGHTNESS);
+    EFLed.setBrightnessPercent(40);  // We do not have access to the settings yet, default to 40
     bootupAnimation();
 
     EFDisplay.init();
@@ -233,6 +240,8 @@ void setup() {
     EFTouch.attachInterruptOnRelease(EFTouchZone::Nose, isr_noseRelease);
     EFTouch.attachInterruptOnShortpress(EFTouchZone::Nose, isr_noseShortpress);
     EFTouch.attachInterruptOnLongpress(EFTouchZone::Nose, isr_noseLongpress);
+    EFTouch.attachInterruptOnShortpress(EFTouchZone::All, isr_allShortpress);
+    EFTouch.attachInterruptOnLongpress(EFTouchZone::All, isr_allLongpress);
     
     // Get FSM going
     fsm.resume();
@@ -244,6 +253,25 @@ void setup() {
 void loop() {
     EFDisplay.loop();
     // Handler: ISR Events
+    if (isrEvents.allLongpress) {
+        fsm.queueEvent(FSMEvent::AllLongpress);
+        isrEvents.noseLongpress = false;
+        isrEvents.noseShortpress = false;
+        isrEvents.noseRelease = false;
+        isrEvents.fingerprintLongpress = false;
+        isrEvents.fingerprintShortpress = false;
+        isrEvents.fingerprintRelease = false;
+        isrEvents.allLongpress = false;
+        isrEvents.allShortpress = false;
+    }
+    if (isrEvents.allShortpress) {
+        fsm.queueEvent(FSMEvent::AllShortpress);
+        isrEvents.noseShortpress = false;
+        isrEvents.noseRelease = false;
+        isrEvents.fingerprintShortpress = false;
+        isrEvents.fingerprintRelease = false;
+        isrEvents.allShortpress = false;
+    }
     if (isrEvents.fingerprintTouch) {
         fsm.queueEvent(FSMEvent::FingerprintTouch);
         isrEvents.fingerprintTouch = false;
