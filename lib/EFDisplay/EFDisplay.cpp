@@ -30,6 +30,7 @@
 #include <EFLed.h>
 #include <SPI.h>
 #include <U8g2lib.h>
+#include <GlitchLine.h>
 
 #include "EFDisplay.h"
 
@@ -45,7 +46,7 @@ static bool glitch_anim = false;
 static int thick_line = -1;
 static int thin_line = -1;
 
-
+std::vector<GlitchLine*> lines = {};
 
 U8G2_SSD1306_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, OLED_RESET);
 
@@ -69,27 +70,35 @@ void EFDisplayClass::loop() {
 
 
     String batt = "BAT:" + String(EFBoard.getBatteryCapacityPercent()) + "%";
-    String voltage = "PWR:" + String(EFBoard.getBatteryVoltage()) + "V";
+
     if(!EFBoard.isBatteryPowered()) {
         batt = "USB POWER";
     }
     u8g2.drawStr(10, 10, batt.c_str());
-    u8g2.drawStr(10, 20, voltage.c_str());
+//    u8g2.drawStr(10, 20, ("PWR:" + String(EFBoard.getBatteryVoltage()) + "V").c_str());
 
-    if(random(0, 3000) == 0 && thick_line < 0) {
-        thick_line = 0;
+    if(random(0, 1000) == 0) {
+        lines.insert(lines.end(), new GlitchLine());
     }
-    if(random(0, 2000) == 0 && thin_line < 0) {
-        thin_line = 127;
-    }
-    animThickLine();
-    animThinLine();
+
+    animateGlitchLines();
 
     eyeOutline();
 
     drawTraces();
 
     u8g2.sendBuffer();
+}
+
+void EFDisplayClass::animateGlitchLines() const {
+    for(auto line: lines) {
+        if(!line->isFinished()) {
+            line->tick();
+            for(int i = 0; i < line->getThickness();i++) {
+                u8g2.drawLine(0, line->getPosition() + i , 63, line->getPosition() + i);
+            }
+        }
+    }
 }
 
 void EFDisplayClass::drawTraces() const {
@@ -151,35 +160,6 @@ void EFDisplayClass::eyeOutline() const {
         int in = (p + 1) % point_size;
         u8g2.drawLine(points[p][0] + x_offset, points[p][1] + y_offset, points[in][0] + x_offset, points[in][1] + y_offset);
     }
-}
-
-
-void EFDisplayClass::animThickLine() const {
-    if(thick_line < 0) {
-        return;
-    }
-
-    if(counter % 1 == 0) {
-        thick_line++;
-    }
-
-    if(thick_line > 127) {
-        thick_line = -1;
-        return;
-    }
-
-    u8g2.drawLine(0, thick_line , 63, thick_line);
-    u8g2.drawLine(0, thick_line+1, 63, thick_line+1);
-}
-
-void EFDisplayClass::animThinLine() const {
-    if(thin_line < 0) {
-        return;
-    }
-    if(counter % 3 == 0) {
-        thin_line--;
-    }
-    u8g2.drawLine(0, thin_line , 63, thin_line);
 }
 
 void EFDisplayClass::animationTick() const {

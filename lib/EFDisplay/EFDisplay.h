@@ -45,6 +45,8 @@ class EFDisplayClass {
     void drawShape(const int *offset, const std::vector<std::array<int, 2>> &points) const;
 
     void drawTraces() const;
+
+    void animateGlitchLines() const;
 };
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EFDISPLAY)
