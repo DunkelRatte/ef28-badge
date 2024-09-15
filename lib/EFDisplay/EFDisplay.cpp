@@ -102,7 +102,7 @@ void EFDisplayClass::animateGlitchLines() const {
 }
 
 void EFDisplayClass::drawTraces() const {
-    const int offset[] = {6, 87};
+    const int offset[] = {7, 88};
     const std::vector<std::array<int, 2>> points = {
             {0, 0},
             {7, 7},
@@ -154,8 +154,8 @@ void EFDisplayClass::eyeOutline() const {
             {-25, 21},
     };
 
-    int x_offset = 43;
-    int y_offset = 42;
+    int x_offset = 44;
+    int y_offset = 43;
     for(int p=0; p < point_size; p++){
         int in = (p + 1) % point_size;
         u8g2.drawLine(points[p][0] + x_offset, points[p][1] + y_offset, points[in][0] + x_offset, points[in][1] + y_offset);
