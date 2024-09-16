@@ -45,6 +45,10 @@ static uint16_t counter = 0;
 static bool glitch_anim = false;
 static int thick_line = -1;
 static int thin_line = -1;
+int battery_update_counter = 0;
+int battery_percentage = 0;
+float battery_voltage = 0;
+
 
 std::vector<GlitchLine*> lines = {};
 
@@ -68,14 +72,7 @@ void EFDisplayClass::loop() {
     EFLed.setDragonEye(CRGB(60, 60, 100));
     EFLed.setDragonMuzzle(CRGB(40, 40, 80));
 
-
-    String batt = "BAT:" + String(EFBoard.getBatteryCapacityPercent()) + "%";
-
-    if(!EFBoard.isBatteryPowered()) {
-        batt = "USB POWER";
-    }
-    u8g2.drawStr(10, 10, batt.c_str());
-//    u8g2.drawStr(10, 20, ("PWR:" + String(EFBoard.getBatteryVoltage()) + "V").c_str());
+    updatePowerInfo();
 
     if(random(0, 1000) == 0) {
         lines.insert(lines.end(), new GlitchLine());
@@ -88,6 +85,23 @@ void EFDisplayClass::loop() {
     drawTraces();
 
     u8g2.sendBuffer();
+}
+
+void EFDisplayClass::updatePowerInfo() const {
+    battery_update_counter++;
+    if(battery_update_counter % 1000 == 0) {
+        battery_percentage = EFBoard.getBatteryCapacityPercent();
+        battery_voltage = EFBoard.getBatteryVoltage();
+        battery_update_counter = 0;
+    }
+    String batt = "BAT:" + String(battery_percentage) + "%";
+
+    if(!EFBoard.isBatteryPowered()) {
+        batt = "USB POWER";
+    }else{
+        u8g2.drawStr(10, 20, ("PWR:" + String(battery_voltage) + "V").c_str());
+    }
+    u8g2.drawStr(10, 10, batt.c_str());
 }
 
 void EFDisplayClass::animateGlitchLines() const {

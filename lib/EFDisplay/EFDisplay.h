@@ -47,6 +47,8 @@ class EFDisplayClass {
     void drawTraces() const;
 
     void animateGlitchLines() const;
+
+    void updatePowerInfo() const;
 };
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EFDISPLAY)
