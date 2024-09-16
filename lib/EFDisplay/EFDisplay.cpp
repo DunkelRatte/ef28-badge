@@ -58,14 +58,15 @@ void EFDisplayClass::init() {
     SPI.begin(OLED_SCLK, -1, OLED_MOSI, OLED_CS);
     u8g2.begin();
     u8g2.setDisplayRotation(U8G2_R3);
+    u8g2.setFont(u8g2_font_5x8_tr);
     u8g2.clearBuffer();
     LOG_INFO("Display setup!");
+
+    bootupAnimation();
 }
 
 void EFDisplayClass::loop() {
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_5x8_tr);
-
 
     animationTick();
 
@@ -179,6 +180,74 @@ void EFDisplayClass::eyeOutline() const {
 void EFDisplayClass::animationTick() const {
     counter++;
     if(counter > 1000) counter = 0;
+}
+
+void EFDisplayClass::bootupAnimation() {
+    int binary_pattern = {};
+
+    const int offset[] = {7, 88};
+    const std::vector<std::array<int, 2>> points = {
+            {0, 0},
+            {7, 7},
+            {47, 7},
+            {54, 0},
+    };
+    drawShape(offset, points);
+    u8g2.sendBuffer();
+    delay(500);
+
+
+    const std::vector<std::array<int, 2>> points2 = {
+            {18, 7},
+            {5, 20},
+            {5, 34},
+            {10, 39},
+            {16, 39},
+            {24, 31},
+    };
+    drawShape(offset, points2);
+    u8g2.sendBuffer();
+    delay(500);
+
+    const std::vector<std::array<int, 2>> points3 = {
+            {32, 7},
+            {47, 22},
+            {47, 34},
+            {52, 39},
+    };
+    drawShape(offset, points3);
+    u8g2.sendBuffer();
+    delay(500);
+
+    const std::vector<std::array<int, 2>> points4 = {
+            {5, 34},
+            {5, 44},
+    };
+    drawShape(offset, points4);
+    u8g2.sendBuffer();
+    delay(500);
+
+    eyeOutline();
+    u8g2.sendBuffer();
+    delay(200);
+
+    for(int i = 0; i < 255; i++) {
+        EFLed.setDragonEye(CRGB(i, 0, 0));
+        delay(5);
+    }
+
+    EFLed.setDragonEye(CRGB(60, 60, 120));
+    delay(2000);
+
+
+
+
+
+//    for(int i = 0; i< 12; i++) {
+//        u8g2.drawStr(0, 10, "000001111100000");
+//    }
+//    u8g2.drawStr(0, 20, "111110000011111");
+    u8g2.sendBuffer();
 }
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_EFDISPLAY)
